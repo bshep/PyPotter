@@ -19,7 +19,7 @@ import threading
 from threading import Thread
 from statistics import mean 
 from CountsPerSec import CountsPerSec
-from HassApi import HassApi
+import requests
 
 # Check for required number of arguments
 if (len(sys.argv) < 4):
@@ -29,7 +29,7 @@ if (len(sys.argv) < 4):
 # Parse Required Arguments
 videoSource = sys.argv[1]
 hassUrl = sys.argv[2]
-hassRestToken = sys.argv[3]
+apiKey = sys.argv[3]
 
 # Parse Optional Arguments
 IsRemoveBackground = True
@@ -44,9 +44,6 @@ if (len(sys.argv) >= 6):
 
 if (len(sys.argv) >= 7):
     IsTraining = sys.argv[6] == "True"
-
-# Initialize Home Assistant Rest API Wrapper
-hass = HassApi(hassUrl, hassRestToken)
 
 # Constants
 TrainingResolution = 50
@@ -111,6 +108,10 @@ frameThresh = None
 findNewWands = True
 trackedPoints = None
 wandTracks = []
+
+frameBG = None
+frameTH = None
+frameOUT = None
 
 def InitClassificationAlgo() :
     """
@@ -185,25 +186,27 @@ def PerformSpell(spell):
     Make the desired Home Assistant REST API call based on the spell
     """
     if (spell=="incendio"):
-        hass.TriggerAutomation("automation.wand_incendio")
+        response = requests.get("http://192.168.2.128:8081/?key=" + apiKey + "&cmd=play")
+        print("wand_incendio - Response: " + response.text)
     elif (spell=="aguamenti"):
-        hass.TriggerAutomation("automation.wand_aguamenti")
+        print("wand_aguamenti")
     elif (spell=="alohomora"):
-        hass.TriggerAutomation("automation.wand_alohomora")
+        print("wand_alohomora")
     elif (spell=="silencio"):
-        hass.TriggerAutomation("automation.wand_silencio")
+        response = requests.get("http://192.168.2.128:8081/?key=" + apiKey + "&cmd=stop")
+        print("wand_silencio - Response: " + response.text)
     elif (spell=="specialis_revelio"):
-        hass.TriggerAutomation("automation.wand_specialis_revelio")
+        print("wand_specialis_revelio")
     elif (spell=="revelio"):
-        hass.TriggerAutomation("automation.wand_revelio")
+        print("wand_revelio")
     elif (spell == "tarantallegra"):
-        hass.TriggerAutomation("automation.wand_tarantallegra")
+        print("wand_tarantallegra")
 
 def CheckForPattern(wandTracks, exampleFrame):
     """
     Check the given wandTracks to see if is is complete, and if it matches a trained spell
     """
-    global find_new_wands, LastSpell
+    global find_new_wands, LastSpell, frameOUT
 
     if (wandTracks == None or len(wandTracks) == 0):
         return
@@ -256,7 +259,10 @@ def CheckForPattern(wandTracks, exampleFrame):
         if (IsShowOutput):
             wandPathFrameWithText = AddIterationsPerSecText(wand_path_frame, outputCps.countsPerSec())
             cv2.putText(wandPathFrameWithText, "Last Spell: " + LastSpell, (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
-            cv2.imshow("Output", wandPathFrameWithText)
+            # cv2.imshow("Output", wandPathFrameWithText)
+            frameOUT = wandPathFrameWithText
+            #cv2.waitkey(10);
+            
 
     return wandTracks
 
@@ -264,7 +270,7 @@ def RemoveBackground():
     """
     Thread for removing background
     """
-    global frame, frame_no_background, IsNewFrame, IsNewFrameNoBackground
+    global frame, frame_no_background, IsNewFrame, IsNewFrameNoBackground, frameBG
 
     fgbg = cv2.createBackgroundSubtractorMOG2()
     t = threading.currentThread()
@@ -279,7 +285,10 @@ def RemoveBackground():
 
             if (IsShowBackgroundRemoved):
                     frameNoBackgroundWithCounts = AddIterationsPerSecText(frame_no_background.copy(), noBackgroundCps.countsPerSec())
-                    cv2.imshow("BackgroundRemoved", frameNoBackgroundWithCounts)
+                    # cv2.imshow("BackgroundRemoved", frameNoBackgroundWithCounts)
+                    frameBG = frameNoBackgroundWithCounts
+                    #cv2.waitkey(10);
+                    
         else:
             time.sleep(0.001)
 
@@ -287,10 +296,15 @@ def CalculateThreshold():
     """
     Thread for calculating frame threshold
     """
-    global frame, frame_no_background, frameThresh, IsNewFrame, IsNewFrameNoBackground, IsNewFrameThreshold
+    global frame, frame_no_background, frameThresh, IsNewFrame, IsNewFrameNoBackground, IsNewFrameThreshold, frameTH
 
     t = threading.currentThread()
     thresholdValue = 240
+    
+    
+    se1 = cv2.getStructuringElement(cv2.MORPH_RECT, (2,2) )
+    se2 = cv2.getStructuringElement(cv2.MORPH_RECT, (1,1) )
+    
     while getattr(t, "do_run", True):
         if (IsRemoveBackground and IsNewFrameNoBackground) or (not IsRemoveBackground and IsNewFrame):
             if IsRemoveBackground:
@@ -303,10 +317,18 @@ def CalculateThreshold():
 
             ret, frameThresh = cv2.threshold(frame_gray, thresholdValue, 255, cv2.THRESH_BINARY);
 
+            # mask = cv2.dilate(frameThresh2, se1, iterations=2)
+            # mask = cv2.erode(mask, se1, iterations=2)
+            # frameThresh = cv2.dilate(mask, se2, iterations=3)
+
+
             IsNewFrameThreshold = True
             if (IsShowThreshold):
                     frameThreshWithCounts = AddIterationsPerSecText(frameThresh.copy(), thresholdCps.countsPerSec())
-                    cv2.imshow("Threshold", frameThreshWithCounts)
+                    # cv2.imshow("Threshold", frameThreshWithCounts)
+                    frameTH = frameThreshWithCounts
+                    #cv2.waitkey(10);
+                    
         else:
             time.sleep(0.001)
 
@@ -327,7 +349,7 @@ def ProcessData():
 
             if (findNewWands):
                 # Identify Potential Wand Tips using GoodFeaturesToTrack
-                trackedPoints = cv2.goodFeaturesToTrack(localFrameThresh, 5, .01, 30)
+                trackedPoints = cv2.goodFeaturesToTrack(localFrameThresh, 1, .1, 30)
                 if trackedPoints is not None:
                     findNewWands = False
             else:
@@ -369,7 +391,7 @@ def AddIterationsPerSecText(frame, iterations_per_sec):
     Add iterations per second text to lower-left corner of a frame.
     """
     cv2.putText(frame, "{:.0f} iterations/sec".format(iterations_per_sec),
-        (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
+        (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 0.20, (255, 255, 255))
     return frame
 
 # Initialize and traing the spell classification algorithm
@@ -412,12 +434,23 @@ while True:
         if (IsShowOriginal):
             frameWithCounts = AddIterationsPerSecText(frame.copy(), originalCps.countsPerSec())
             cv2.imshow("Original", frameWithCounts)
-        
+            #cv2.waitkey(10);
+            
+        print(str(originalCps.countsPerSec()), end='\r')
     else:
         # If an error occurred, try initializing the video capture again
         videoCapture = cv2.VideoCapture(videoSource)
 
     # Check for ESC key, if pressed shut everything down
+    if (frameBG is not None):
+        cv2.imshow("BackgroundRemoved", frameBG)
+        
+    if (frameTH is not None):
+        cv2.imshow("Threshold", frameTH)
+        
+    if (frameOUT is not None):
+        cv2.imshow("Output", frameOUT)
+         
     if (cv2.waitKey(1) is 27):
         break
 

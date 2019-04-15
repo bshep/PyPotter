@@ -335,3 +335,5 @@ ASALocalRun/
 
 # Visual Studio Python Project
 .pyproj
+
+.DS_Store
