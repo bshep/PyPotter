@@ -135,10 +135,14 @@ def InitClassificationAlgo() :
             nameLookup[dirCount] = d
             dirCount = dirCount + 1
             for f in listdir(join(trainingDirectory,d)):
+                if f[0] == ".":
+                    continue
+                    
                 if isfile(join(trainingDirectory,d,f)):
                     labelNames.append(d)
                     labelIndexes.append(dirCount-1)
                     trainingSet.append(join(trainingDirectory,d,f));
+                    # print (numPics, ": ", join(trainingDirectory,d,f))
                     numPics = numPics + 1
         
         iniFile = join(trainingDirectory,d + ".ini")
@@ -157,6 +161,7 @@ def InitClassificationAlgo() :
     samples = []
     for i in range(0, numPics):
         img = cv2.imread(trainingSet[i])
+        # print (i)
         gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         samples.append(gray);
         npArray = np.array(samples)
@@ -191,13 +196,13 @@ def ClassifyImage(img):
         print("Match: " + nameLookup[ret])
         return nameLookup[ret]
     else:
-        return "error"
+        return "Error"
 
 def PerformSpell(spell):
     """
     Make the desired Home Assistant REST API call based on the spell
     """
-    if (spell=="mistakes"):
+    if (spell == "mistakes" or spell == "Error"):
         return
     
     if (urlLookup[spell] is not None):    
@@ -395,7 +400,7 @@ def AddIterationsPerSecText(frame, iterations_per_sec):
     Add iterations per second text to lower-left corner of a frame.
     """
     cv2.putText(frame, "{:.0f} iterations/sec".format(iterations_per_sec),
-        (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 0.20, (255, 255, 255))
+        (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255))
     return frame
 
 # Initialize and traing the spell classification algorithm
