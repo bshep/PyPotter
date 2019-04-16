@@ -338,3 +338,5 @@ ASALocalRun/
 
 .DS_Store
 config
+start
+Training/*.ini

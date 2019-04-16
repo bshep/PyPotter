@@ -20,6 +20,7 @@ from threading import Thread
 from statistics import mean 
 from CountsPerSec import CountsPerSec
 import requests
+import configparser
 
 # Check for required number of arguments
 if (len(sys.argv) < 4):
@@ -85,6 +86,7 @@ if (IsShowOutput):
 # Init Global Variables
 IsNewFrame = False
 nameLookup = {}
+urlLookup = {}
 LastSpell = "None"
 
 originalCps = CountsPerSec()
@@ -138,6 +140,16 @@ def InitClassificationAlgo() :
                     labelIndexes.append(dirCount-1)
                     trainingSet.append(join(trainingDirectory,d,f));
                     numPics = numPics + 1
+        
+        iniFile = join(trainingDirectory,d + ".ini")
+        if isfile(iniFile):
+            print ("Readinig INI: ", iniFile)
+            config = configparser.ConfigParser()
+            config.read(iniFile)
+            urlLookup[d] = config['spell']['url']
+            print ("URL: ", urlLookup[d])
+        else:
+            urlLookup[d] = None
 
     print ("Trained Spells: ")
     print (nameLookup)
@@ -185,22 +197,14 @@ def PerformSpell(spell):
     """
     Make the desired Home Assistant REST API call based on the spell
     """
-    if (spell=="incendio"):
-        response = requests.get("http://192.168.2.128:8081/?key=" + apiKey + "&cmd=play")
-        print("wand_incendio - Response: " + response.text)
-    elif (spell=="aguamenti"):
-        print("wand_aguamenti")
-    elif (spell=="alohomora"):
-        print("wand_alohomora")
-    elif (spell=="silencio"):
-        response = requests.get("http://192.168.2.128:8081/?key=" + apiKey + "&cmd=stop")
-        print("wand_silencio - Response: " + response.text)
-    elif (spell=="specialis_revelio"):
-        print("wand_specialis_revelio")
-    elif (spell=="revelio"):
-        print("wand_revelio")
-    elif (spell == "tarantallegra"):
-        print("wand_tarantallegra")
+    if (spell=="mistakes"):
+        return
+    
+    if (urlLookup[spell] is not None):    
+        response = requests.get(urlLookup[spell] + "&key=" + apiKey )
+        print(spell, " - Response: ", response.text)
+    else:
+        print(spell, "No url associated with that spell")
 
 def CheckForPattern(wandTracks, exampleFrame):
     """
