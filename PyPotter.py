@@ -54,7 +54,7 @@ MinSpellLength = 15
 MinSpellDistance = 100
 
 # Booleans to turn on or off output windows
-IsShowOriginal = False
+IsShowOriginal = False  
 IsShowBackgroundRemoved = False
 IsShowThreshold = False
 IsShowOutput = False
@@ -431,28 +431,29 @@ while True:
         IsNewFrame = True
 
         # Update Windows
-        if (IsShowOriginal):
+        if (IsShowOriginal and IsShowOutputWindows):
             frameWithCounts = AddIterationsPerSecText(frame.copy(), originalCps.countsPerSec())
             cv2.imshow("Original", frameWithCounts)
             #cv2.waitkey(10);
             
-        print(str(originalCps.countsPerSec()), end='\r')
+        # print(str(originalCps.countsPerSec()), end='\r')
     else:
         # If an error occurred, try initializing the video capture again
         videoCapture = cv2.VideoCapture(videoSource)
 
-    # Check for ESC key, if pressed shut everything down
-    if (frameBG is not None):
-        cv2.imshow("BackgroundRemoved", frameBG)
+    if (IsShowOutputWindows):
+        # Check for ESC key, if pressed shut everything down
+        if (frameBG is not None):
+            cv2.imshow("BackgroundRemoved", frameBG)
         
-    if (frameTH is not None):
-        cv2.imshow("Threshold", frameTH)
+        if (frameTH is not None):
+            cv2.imshow("Threshold", frameTH)
         
-    if (frameOUT is not None):
-        cv2.imshow("Output", frameOUT)
+        if (frameOUT is not None):
+            cv2.imshow("Output", frameOUT)
          
-    if (cv2.waitKey(1) is 27):
-        break
+        if (cv2.waitKey(1) is 27):
+            break
 
 # Shutdown PyPotter
 if IsRemoveBackground:
