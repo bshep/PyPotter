@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 shutdown() {
   echo "shutting down container"
@@ -28,7 +28,7 @@ export > /etc/envvars
 # run all scripts in the run_once folder
 /bin/run-parts /etc/run_once
 
-exec runsvdir -P /etc/service &
+exec env - runsvdir -P /etc/service &
 
 RUNSVDIR=$!
 echo "Started runsvdir, PID is $RUNSVDIR"

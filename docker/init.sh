@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+source /etc/envvars
 
 cd /usr/src/app/pypotter
 
@@ -11,4 +13,4 @@ chmod -R 777 /config
 
 # echo python PyPotter.py $VIDEO_URL 192.168.2.1 $API_KEY True False
 
-python PyPotter.py $VIDEO_URL 192.168.2.1 $API_KEY True False True
+python PyPotter.py $VIDEO_URL 192.168.2.1 $API_KEY True False False > /dev/stdout

@@ -25,7 +25,7 @@ import syslog
 
 # Check for required number of arguments
 if (len(sys.argv) < 4):
-    log("Incorrect number of arguments. Required Arguments: [video source url] [home assistant URL] [API token]")
+    print("Incorrect number of arguments. Required Arguments: [video source url] [home assistant URL] [API token]")
     sys.exit(0)
 
 # Parse Required Arguments
@@ -147,26 +147,26 @@ def InitClassificationAlgo() :
                     labelNames.append(d)
                     labelIndexes.append(dirCount-1)
                     trainingSet.append(join(trainingDirectory,d,f));
-                    # log (numPics, ": ", join(trainingDirectory,d,f))
+                    # print(numPics, ": ", join(trainingDirectory,d,f))
                     numPics = numPics + 1
         
         iniFile = join(trainingDirectory,d + ".ini")
         if isfile(iniFile):
-            log ("Readinig INI: ", iniFile)
+            print("Readinig INI: ", iniFile)
             config = configparser.ConfigParser()
             config.read(iniFile)
             urlLookup[d] = config['spell']['url']
-            log ("URL: ", urlLookup[d])
+            print("URL: ", urlLookup[d])
         else:
             urlLookup[d] = None
 
-    log ("Trained Spells: ")
-    log (nameLookup)
+    print("Trained Spells: ")
+    print(nameLookup)
 
     samples = []
     for i in range(0, numPics):
         img = cv2.imread(trainingSet[i])
-        # log (i)
+        # print(i)
         gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         samples.append(gray);
         npArray = np.array(samples)
@@ -191,14 +191,14 @@ def ClassifyImage(img):
     imgArr = np.array(test_gray).astype(np.float32)
     sample = imgArr.reshape(-1, TrainingNumPixels).astype(np.float32)
     ret, result, neighbours, dist = knn.findNearest(sample,k=5)
-    log(ret, result, neighbours, dist)
+    print(ret, result, neighbours, dist)
 
     if IsTraining:
         filename = "char" + str(time.time()) + nameLookup[ret] + ".png"
         cv2.imwrite(join(TrainingFolderName, filename), test_gray)
 
     if nameLookup[ret] is not None:
-        log("Match: " + nameLookup[ret])
+        print("Match: " + nameLookup[ret])
         return nameLookup[ret]
     else:
         return "Error"
@@ -212,9 +212,9 @@ def PerformSpell(spell):
     
     if (urlLookup[spell] is not None):    
         response = requests.get(urlLookup[spell] + "&key=" + apiKey )
-        log(spell, " - Response: ", response.text)
+        print(spell, " - Response: ", response.text)
     else:
-        log(spell, "No url associated with that spell")
+        print(spell, "No url associated with that spell")
 
 def CheckForPattern(wandTracks, exampleFrame):
     """
@@ -261,8 +261,8 @@ def CheckForPattern(wandTracks, exampleFrame):
             result = ClassifyImage(crop);
             cv2.putText(wand_path_frame, result, (0,50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255,255,255))
 
-            log("Result: ", result, " Most Recent avg: ", avgMostRecentDistances, " Length Distances: ", len(distances), " Sum Distances: ", sumDistances)
-            log("")
+            print("Result: ", result, " Most Recent avg: ", avgMostRecentDistances, " Length Distances: ", len(distances), " Sum Distances: ", sumDistances)
+            print("")
 
             PerformSpell(result)
             LastSpell = result
@@ -409,17 +409,6 @@ def AddIterationsPerSecText(frame, iterations_per_sec):
     return frame
 
 
-def log(*args):
-    """prints out or logs items in args"""
-    
-    global IsHeadless
-    if (IsHeadless):
-        for arg in args:
-            syslog.syslog(syslog.LOG_INFO, str(arg))
-    else:
-        print(*args)
-            
-        
 
 # Initialize and traing the spell classification algorithm
 InitClassificationAlgo()
@@ -463,7 +452,7 @@ while True:
             cv2.imshow("Original", frameWithCounts)
             #cv2.waitkey(10);
             
-        # log(str(originalCps.countsPerSec()), end='\r')
+        # print(str(originalCps.countsPerSec()), end='\r')
     else:
         # If an error occurred, try initializing the video capture again
         videoCapture = cv2.VideoCapture(videoSource)
