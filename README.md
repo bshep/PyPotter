@@ -14,11 +14,12 @@ Directories:
 <li><code>/config</code> - point this to where you want to store the trainig and config files
 <li><code>/config/Training</code> - each folder here will containing training images to match against
 <li><code><i>spellname</i>.ini</code> - follow the format below, contain the URL to ping when a spell is matched against
+<p>
 <code>
 	[spell]
 	URL = url goes here
 </code>
-
+</p>
 # Acknowledgements
 PyPotter shares inspiration and code from the following projects:  
 
