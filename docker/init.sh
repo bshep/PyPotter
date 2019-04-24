@@ -13,4 +13,4 @@ chmod -R 777 /config
 
 # echo python PyPotter.py $VIDEO_URL 192.168.2.1 $API_KEY True False
 
-python PyPotter.py $VIDEO_URL 192.168.2.1 $API_KEY True False False > (tee -a /proc/1/fd/2)
+python -u PyPotter.py $VIDEO_URL 192.168.2.1 $API_KEY True False False 2>&1 | tee -a /config/pypotter.log
